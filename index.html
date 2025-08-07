@@ -1,0 +1,123 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETA Message Generator</title>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 700px; margin: auto; }
+    textarea, input { width: 100%; padding: 10px; margin: 10px 0; font-size: 16px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: green; color: white; border: none; border-radius: 5px; }
+    #output { white-space: pre-line; background: #f0f0f0; padding: 15px; border-radius: 8px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>ETA Message Generator</h2>
+  <label><strong>Paste Customer Details (with Name, Mobile, etc):</strong></label>
+  <textarea id="detailsInput" rows="6" placeholder="Paste order details here..."></textarea><label><strong>Enter Pincode:</strong></label> <input type="text" id="pincodeInput" placeholder="Enter 6-digit pincode">
+
+<button onclick="generateMessage()">Convert to ETA Message</button>
+
+  <div id="output"></div>
+  <br>
+  <a id="whatsappLink" href="#" target="_blank"><button style="background: #25D366;">Send to Customer on WhatsApp</button></a>  <script>
+    const pincodeLatLng = {
+      "335707": { lat: 29.83, lng: 73.88 },
+      "244901": { lat: 28.82, lng: 79.03 }
+    };
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function estimateDeliveryByDistance(distance) {
+      if (distance <= 30) return "1 day";
+      else if (distance <= 60) return "1-2 days";
+      else if (distance <= 100) return "2-3 days";
+      else if (distance <= 200) return "3-4 days";
+      else if (distance <= 500) return "4-5 days";
+      else if (distance <= 1000) return "4-6 days";
+      else if (distance <= 1500) return "5-7 days";
+      else if (distance <= 2000) return "6-8 days";
+      else return "8-12 days";
+    }
+
+    function calculateEstimatedDate(etaText, startOffset = 0) {
+      const numbers = etaText.match(/\d+/g);
+      if (!numbers) return "N/A";
+      const minDays = parseInt(numbers[0]);
+      const maxDays = parseInt(numbers[numbers.length - 1]);
+      let start = new Date();
+      start.setDate(start.getDate() + startOffset);
+      let end = new Date(start);
+      start.setDate(start.getDate() + minDays);
+      end.setDate(end.getDate() + maxDays);
+      const format = (d) => `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
+      return `${format(start)} to ${format(end)}`;
+    }
+
+    function generateMessage() {
+      const input = document.getElementById("detailsInput").value;
+      const pincode = document.getElementById("pincodeInput").value.trim();
+      const output = document.getElementById("output");
+
+      const nameMatch = input.match(/Name:\s*(.*)/i);
+      const mobileMatch = input.match(/Mobile:\s*(.*)/i);
+      const name = nameMatch ? nameMatch[1].trim() : "Customer";
+      const mobile = mobileMatch ? mobileMatch[1].replace(/[^0-9]/g, '') : "";
+
+      const isVillage = /village/i.test(input);
+
+      let distance = "N/A", eta = "N/A", deliveryDate = "N/A", startOffset = 0;
+
+      const now = new Date();
+      const day = now.getDay();
+      const hour = now.getHours();
+      const willDispatchMonday = (day === 0) || (day === 6 && hour >= 19);
+      const willDispatchNextDay = (day >= 1 && day <= 5 && hour >= 19);
+      if (willDispatchMonday || willDispatchNextDay) startOffset = 1;
+
+      if (pincodeLatLng[pincode]) {
+        const rampurLat = 28.8, rampurLng = 79.0;
+        const { lat, lng } = pincodeLatLng[pincode];
+        distance = haversine(rampurLat, rampurLng, lat, lng).toFixed(0) + " km";
+        eta = estimateDeliveryByDistance(parseFloat(distance));
+        if (isVillage) eta = "+2 to 3 days extra | " + eta;
+        deliveryDate = calculateEstimatedDate(eta, startOffset);
+      } else {
+        eta = "Please add this pincode to distance list";
+      }
+
+      const dispatchNote = willDispatchMonday
+        ? "✅ Your order will be dispatched on **Monday**."
+        : "✅ Your order will be dispatched **by 8 PM today**.";
+
+      const dispatchHindi = willDispatchMonday
+        ? "सोमवार को"
+        : "आज रात 8 बजे तक";
+
+      const courierInfo = isVillage
+        ? "🚚 Likely courier: *Delhivery* (Dispatches Mon–Sat after 2 PM). You may request *DTDC* or *Delhivery* on WhatsApp. Delivery may take 2–3 extra days."
+        : "🚚 Courier: *DTDC* (main cities) or *Delhivery* (villages/remote areas)";
+
+      const message = `${dispatchNote}
+📸 Tracking details & parcel photo will be shared between 9–10 PM on WhatsApp.
+आप चाहें तो ट्रैकिंग या पार्सल फोटो के लिए हमें WhatsApp पर मैसेज कर सकते हैं।
+
+${courierInfo}
+
+• Distance from Rampur: ${distance}
+• Delivery time: ${eta}
+• Expected delivery: ${deliveryDate}
+
+ध्यान दें: आपका ऑर्डर ${dispatchHindi} भेजा जाएगा और आपको रात 9 से 10 बजे के बीच ट्रैकिंग डिटेल्स और पार्सल की फोटो WhatsApp पर मिल जाएगी。`;
+
+      output.innerText = message;
+      const waUrl = `https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
+      document.getElementById("whatsappLink").href = waUrl;
+    }
+  </script></body>
+</html>
