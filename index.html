@@ -1,5 +1,7 @@
 <!DOCTYPE html><html lang="en">
 <head>
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="referrer" content="no-referrer">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ETA Message Generator</title>
@@ -9,7 +11,7 @@
     button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: green; color: white; border: none; border-radius: 5px; }
     #output { white-space: pre-line; background: #f0f0f0; padding: 15px; border-radius: 8px; margin-top: 20px; }
   </style>
-<link rel="stylesheet" href="https://gamesplanet13.github.io/arcade-accessories-/website-theme.css?v=20261023-web"><script defer src="https://gamesplanet13.github.io/arcade-accessories-/website-shell.js?v=20261023-web"></script></head>
+</head>
 <body>
   <h2>ETA Message Generator</h2>
   <label><strong>Paste Customer Details (with Name, Mobile, etc):</strong></label>
@@ -119,5 +121,5 @@ ${courierInfo}
       const waUrl = `https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
       document.getElementById("whatsappLink").href = waUrl;
     }
-  </script><script src="https://gamesplanet13.github.io/arcade-accessories-/ps2-style-footer.js?v=20261016-ps2-view"></script></body>
+  </script></body>
 </html>
